@@ -1,6 +1,6 @@
 {
-  "name": "@uniswap/v2-core-tests",
-  "description": "tests for the v2 core contracts",
+  "name": "@uniswap/v2-core",
+  "description": "Tests for Uniswap V2 Core contracts",
   "devDependencies": {
     "@types/chai": "^4.2.6",
     "@types/mocha": "^5.2.7",
