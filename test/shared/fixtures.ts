@@ -4,9 +4,9 @@ import { deployContract } from 'ethereum-waffle'
 import { SimpleContractJSON } from "ethereum-waffle/dist/esm/ContractJSON"
 
 import { MAX_UINT_128 } from './utilities'
-import ERC20 from '../../../out/ERC20.sol/ERC20.json'
-import UniswapV2Factory from '../../../out/UniswapV2Factory.sol/UniswapV2Factory.json'
-import UniswapV2Pair from '../../../out/UniswapV2Pair.sol/UniswapV2Pair.json'
+import ERC20 from '../../../../out/ERC20.sol/ERC20.json'
+import UniswapV2Factory from '../../../../out/UniswapV2Factory.sol/UniswapV2Factory.json'
+import UniswapV2Pair from '../../../../out/UniswapV2Pair.sol/UniswapV2Pair.json'
 import {BigNumber, bigNumberify} from "ethers/utils";
 import { AddressZero } from "ethers/constants";
 
