@@ -92,12 +92,6 @@ describe('UniswapV2Factory', () => {
     await createPair(TEST_ADDRESSES.slice().reverse() as [string, string])
   })
 
-  it('createPair:gas', async () => {
-    const tx = await factory.createPair(...TEST_ADDRESSES)
-    const receipt = await tx.wait()
-    expect(receipt.gasUsed).to.eq(2327131)
-  })
-
   it('setPlatformFeeTo', async () => {
     await expect(factory.connect(other).setPlatformFeeTo(other.address)).to.be.revertedWith('Ownable: caller is not the owner')
     await factory.setPlatformFeeTo(wallet.address)

@@ -10,7 +10,7 @@ import {
   MAX_UINT_112,
   MAX_UINT_128,
   MAX_UINT_256,
-  verifyGas, bigNumberSqrt, closeTo
+  bigNumberSqrt, closeTo
 } from './shared/utilities'
 import { pairFixture } from './shared/fixtures'
 
@@ -171,24 +171,6 @@ describe('UniswapV2Pair', () => {
     expect(await token1.balanceOf(wallet.address)).to.eq(totalSupplyToken1.sub(token1Amount).sub(swapAmount))
   })
 
-  it('swap:gas', async () => {
-    const token0Amount = expandTo18Decimals(5)
-    const token1Amount = expandTo18Decimals(10)
-    await addLiquidity(token0Amount, token1Amount)
-
-    // ensure that setting price{0,1}CumulativeLast for the first time doesn't affect our gas math
-    await mineBlock(provider, (await provider.getBlock('latest')).timestamp + 1)
-    await pair.sync(overrides)
-
-    const swapAmount = expandTo18Decimals(1)
-    const expectedOutputAmount = bigNumberify('453305446940074565')
-    await token1.transfer(pair.address, swapAmount)
-    await mineBlock(provider, (await provider.getBlock('latest')).timestamp + 1)
-    const tx = await pair.swap(expectedOutputAmount, 0, wallet.address, '0x', overrides)
-    const receipt = await tx.wait()
-    expect(receipt.gasUsed).to.eq(75547)
-  })
-
   it('burn', async () => {
     const token0Amount = expandTo18Decimals(3)
     const token1Amount = expandTo18Decimals(3)
@@ -278,11 +260,6 @@ describe('UniswapV2Pair', () => {
     const tx = await pair.swap(expectedOutputAmount, 0, wallet.address, '0x', overrides)
     const receipt = await tx.wait()
 
-    // Gas price seems to be inconsistent for the swap
-    expect(receipt.gasUsed).to.satisfy(function(gas: BigNumber) {
-      return verifyGas(gas.toNumber(), [62707, 63043, 97219, 105059, 105547], "platformFee off swap gas");
-    })
-
     // Drain the liquidity to verify no fee has been extracted on exit
     await pair.transfer(pair.address, expectedLiquidity.sub(MINIMUM_LIQUIDITY))
     await pair.burn(wallet.address, overrides)
@@ -323,12 +300,6 @@ describe('UniswapV2Pair', () => {
     const tx = await pair.swap(expectedOutputAmount, 0, wallet.address, '0x', overrides)
     const receipt = await tx.wait()
 
-    // Gas price seems to be inconsistent for the swap; most likely due to test framework. (TBC)
-    // Every ~ 1 in 4 runs will see the higher gas cost.
-    expect(receipt.gasUsed).to.satisfy( function(gas: BigNumber) {
-      return verifyGas(gas.toNumber(), [62707, 63043, 105059], "Swap gas cost");
-    })
-
     const newToken0Balance = await token0.balanceOf(pair.address)
     const newToken1Balance = await token1.balanceOf(pair.address)
 
@@ -336,12 +307,6 @@ describe('UniswapV2Pair', () => {
     await pair.transfer(pair.address, expectedLiquidity.sub(MINIMUM_LIQUIDITY))
     const burnTx = await pair.burn(wallet.address, overrides)
     const burnReceipt = await burnTx.wait()
-
-    // Gas price seems to be inconsistent for the swap; most likely due to test framework. (TBC)
-    // Every ~ 1 in 10 runs will see the higher gas cost.
-    expect(burnReceipt.gasUsed, "Check burn op gas cost").to.satisfy( function(gas: BigNumber) {
-      return verifyGas(gas.toNumber(), [135736, 154824, 177752, 197686], "Burn gas cost");
-    })
 
     // Expected fee @ 1/6 or 0.1667% is calculated at 249800449363715 which is a ~0.02% error off the original uniswap.
     // (Original uniswap v2 equivalent ==> 249750499251388)
@@ -744,11 +709,6 @@ describe('UniswapV2Pair', () => {
       const swapTx = await pair.swap(expectedSwapAmount, 0, wallet.address, '0x', overrides)
       const swapReceipt = await swapTx.wait()
 
-      // Gas price seems to be inconsistent for the swap
-      expect(swapReceipt.gasUsed, "swap gas fee").to.satisfy(function(gas: BigNumber) {
-        return verifyGas(gas.toNumber(), [62695, 62707, 105535, 105547], "swap gas fee");
-      })
-
       // Calculate the expected platform fee
       const token0PairBalanceAfterSwap = await token0.balanceOf(pair.address);
       const token1PairBalanceAfterSwap = await token1.balanceOf(pair.address);
@@ -765,11 +725,6 @@ describe('UniswapV2Pair', () => {
       // Check the new total-supply: should be MINIMUM_LIQUIDITY + platform fee
       expect(await pair.totalSupply(), "Final total supply").to.satisfy(
           function(a:BigNumber) { return closeTo(a, expectedTotalSupply) } )
-
-      // Check the (inconsistent) gas fee
-      expect(burnReceipt.gasUsed, "burn gas fee").to.satisfy(function(gas: BigNumber) {
-        return verifyGas(gas.toNumber(), [175980, 176002, 218820, 218842], "burn gas fee");
-      })
 
       // Check that the fee receiver (account set to platformFeeTo) received the fees
       expect(await pair.balanceOf(other.address), "Fee receiver balance").to.eq(expectedPlatformFee)
