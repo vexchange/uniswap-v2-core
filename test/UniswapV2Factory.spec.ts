@@ -73,17 +73,6 @@ describe('UniswapV2Factory', () => {
     expect(await pair.token1()).to.eq(TEST_ADDRESSES[1])
   }
 
-  it('retrievePairInitCode', async () => {
-    // Retrieve the UniswapV2Pair init-code from the factory
-    const initCode: BigNumber = await factory.getPairInitHash()
-
-    // Expected init-code (hard coded value is used in dependent modules as a gas optimisation, so also verified here).
-    // Note: changing the hard-coded expected init-code value implies you will need to also update the dependency.
-    // See dependency @ v2-periphery/contracts/libraries/UniswapV2Library.sol
-    // todo: update this comment once we have built out the router
-    expect(initCode, 'UniswapV2Pair init-code').to.eq('0x532432c7a4aa1f8ce4121791e8a5937d0f66162b0eb19d7b134c8e5e1de69155')
-  })
-
   it('createPair', async () => {
     await createPair(TEST_ADDRESSES)
   })
