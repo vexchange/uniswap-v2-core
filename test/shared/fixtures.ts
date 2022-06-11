@@ -4,7 +4,7 @@ import { deployContract } from 'ethereum-waffle'
 import { SimpleContractJSON } from "ethereum-waffle/dist/esm/ContractJSON"
 
 import { MAX_UINT_128 } from './utilities'
-import ERC20 from '../../out/ERC20.sol/ERC20.json'
+import TestERC20 from '../../out/TestERC20.sol/TestERC20.json'
 import UniswapV2Factory from '../../out/UniswapV2Factory.sol/UniswapV2Factory.json'
 import UniswapV2Pair from '../../out/UniswapV2Pair.sol/UniswapV2Pair.json'
 import {BigNumber, bigNumberify} from "ethers/utils";
@@ -46,8 +46,8 @@ export async function pairFixture(provider: Web3Provider, [wallet]: Wallet[]): P
   const { factory, defaultSwapFee, defaultPlatformFee, platformFeeTo } = await factoryFixture(provider, [wallet])
 
   const ERC20Rebuilt: SimpleContractJSON = {
-    abi: ERC20.abi,
-    bytecode: ERC20.bytecode.object
+    abi: TestERC20.abi,
+    bytecode: TestERC20.bytecode.object
   }
 
   // Setup initial liquidity of pair's tokens; 10000 x 10^8  originally used in tests, this

@@ -7,7 +7,7 @@ import { ecsign } from 'ethereumjs-util'
 
 import { expandTo18Decimals, getApprovalDigest } from './shared/utilities'
 
-import ERC20 from '../out/ERC20.sol/ERC20.json'
+import TestERC20 from '../out/TestERC20.sol/TestERC20.json'
 import {SimpleContractJSON} from "ethereum-waffle/dist/esm/ContractJSON";
 
 chai.use(solidity)
@@ -26,8 +26,8 @@ describe('UniswapV2ERC20', () => {
   let token: Contract
   beforeEach(async () => {
     const ERC20Rebuilt: SimpleContractJSON = {
-      abi: ERC20.abi,
-      bytecode: ERC20.bytecode.object
+      abi: TestERC20.abi,
+      bytecode: TestERC20.bytecode.object
     }
     token = await deployContract(wallet, ERC20Rebuilt, [TOTAL_SUPPLY])
   })
