@@ -1,7 +1,7 @@
 import chai, { expect } from 'chai'
 import { Contract } from 'ethers'
 import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
-import { BigNumber, bigNumberify } from 'ethers/utils'
+import {BigNumber, bigNumberify, defaultAbiCoder, hexlify, hexZeroPad, keccak256, toUtf8Bytes} from 'ethers/utils'
 import { AddressZero } from 'ethers/constants'
 import {
   expandTo18Decimals,
@@ -36,6 +36,7 @@ describe('UniswapV2Pair', () => {
   let token1: Contract
   let token2: Contract
   let pair: Contract
+  let recoverer: string
   beforeEach(async () => {
     const fixture = await loadFixture(pairFixture)
     factory = fixture.factory
@@ -43,6 +44,7 @@ describe('UniswapV2Pair', () => {
     token1 = fixture.token1
     token2 = fixture.token2
     pair = fixture.pair
+    recoverer = fixture.recoverer
   })
 
   it('mint', async () => {
@@ -238,10 +240,18 @@ describe('UniswapV2Pair', () => {
    */
   it('platformFeeTo:off', async () => {
     // Ensure the the swap fee is set to 0.3%
-    await factory.setSwapFeeForPair(pair.address, 30);
+    await factory.rawCall(
+        pair.address,
+        pair.interface.functions.setCustomSwapFee.sighash + defaultAbiCoder.encode(["uint256"], [30]).substring(2),
+        0
+    )
 
     // Ensure the platform fee is zero (equiv to original 'feeTo' off)
-    await factory.setPlatformFeeForPair( pair.address, 0 );
+    await factory.rawCall(
+        pair.address,
+        pair.interface.functions.setCustomPlatformFee.sighash + defaultAbiCoder.encode(["uint256"], [0]).substring(2),
+        0
+    )
 
     const token0Amount = expandTo18Decimals(1000)
     const token1Amount = expandTo18Decimals(1000)
@@ -270,14 +280,23 @@ describe('UniswapV2Pair', () => {
    * Platform Fee on basic base.
    */
   it('platformFeeTo:on', async () => {
-    await factory.setPlatformFeeTo(other.address)
-
     const testSwapFee: number = 30
     const testPlatformFee: number = 1667
 
-    // Also set the platform fee to
-    await factory.setSwapFeeForPair(pair.address, testSwapFee);
-    await factory.setPlatformFeeForPair(pair.address, testPlatformFee);
+    await factory.set(
+        keccak256(toUtf8Bytes("UniswapV2Pair::platformFeeTo")),
+        hexZeroPad(other.address, 32)
+    )
+    await factory.rawCall(
+        pair.address,
+        pair.interface.functions.setCustomSwapFee.sighash + defaultAbiCoder.encode(["uint256"], [testSwapFee]).substring(2),
+        0
+    )
+    await factory.rawCall(
+        pair.address,
+        pair.interface.functions.setCustomPlatformFee.sighash + defaultAbiCoder.encode(["uint256"], [testPlatformFee]).substring(2),
+        0
+    )
 
     // Prepare basic liquidity of 10^18 on each token
     const token0Amount = expandTo18Decimals(1000)
@@ -689,9 +708,20 @@ describe('UniswapV2Pair', () => {
       const [swapFee, platformFee] = swapAndPlatformTestCase
 
       // Setup the platform and swap fee
-      await factory.setSwapFeeForPair(pair.address, swapFee);
-      await factory.setPlatformFeeForPair(pair.address, platformFee);
-      await factory.setPlatformFeeTo(other.address)
+      await factory.rawCall(
+          pair.address,
+          pair.interface.functions.setCustomSwapFee.sighash + defaultAbiCoder.encode(["uint256"], [swapFee]).substring(2),
+          0
+      )
+      await factory.rawCall(
+          pair.address,
+          pair.interface.functions.setCustomPlatformFee.sighash + defaultAbiCoder.encode(["uint256"], [platformFee]).substring(2),
+          0
+      )
+      await factory.set(
+          keccak256(toUtf8Bytes("UniswapV2Pair::platformFeeTo")),
+          hexZeroPad(other.address, 32)
+      )
 
       const swapAmount : BigNumber = bigNumberify(expandTo18Decimals(1));
 
@@ -751,8 +781,15 @@ describe('UniswapV2Pair', () => {
     const platformFee : BigNumber = bigNumberify(2500)
 
     // Ensure the platform fee is set
-    await factory.setPlatformFeeForPair(pair.address, platformFee);
-    await factory.setPlatformFeeTo(other.address)
+    await factory.rawCall(
+        pair.address,
+        pair.interface.functions.setCustomPlatformFee.sighash + defaultAbiCoder.encode(["uint256"], [platformFee]).substring(2),
+        0
+    )
+    await factory.set(
+        keccak256(toUtf8Bytes("UniswapV2Pair::platformFeeTo")),
+        hexZeroPad(other.address, 32)
+    )
 
     // Setup minimum liquidity
     const initial0Amount = MINIMUM_LIQUIDITY.add(1)
@@ -787,9 +824,6 @@ describe('UniswapV2Pair', () => {
    *  recoverToken - error handling for invalid tokens
    */
   it('recoverToken:invalidToken', async () => {
-    const recoveryAddress = other.address
-    await factory.setDefaultRecoverer(recoveryAddress)
-
     await expect(pair.recoverToken(token0.address)).to.be.revertedWith('UniswapV2: INVALID_TOKEN_TO_RECOVER')
     await expect(pair.recoverToken(token1.address)).to.be.revertedWith('UniswapV2: INVALID_TOKEN_TO_RECOVER')
 
@@ -801,8 +835,10 @@ describe('UniswapV2Pair', () => {
    *  recoverToken - failure when recoverer is AddressZero or not set
    */
   it('recoverToken:AddressZero', async () => {
-    // recoverer should be AddressZero by default
-    expect(await factory.defaultRecoverer()).to.eq(AddressZero)
+    await factory.set(
+        keccak256(toUtf8Bytes("UniswapV2Pair::defaultRecoverer")),
+        hexZeroPad(AddressZero, 32)
+    )
     await expect(pair.recoverToken(token2.address)).to.be.revertedWith('UniswapV2: RECOVERER_ZERO_ADDRESS')
 
     // Transfer some token2 to pair address
@@ -818,14 +854,11 @@ describe('UniswapV2Pair', () => {
    *  recoverToken - when there are no tokens to be recovered
    */
   it('recoverToken:noAmount', async () => {
-    const recoveryAddress = other.address
-
     // There should not be any token of the kind to be recovered
     // in the recoverer's account
-    expect(await token2.balanceOf(recoveryAddress)).to.eq(0)
-    await factory.setDefaultRecoverer(recoveryAddress)
+    expect(await token2.balanceOf(recoverer)).to.eq(0)
     await pair.recoverToken(token2.address)
-    expect(await token2.balanceOf(recoveryAddress)).to.eq(0)
+    expect(await token2.balanceOf(recoverer)).to.eq(0)
   })
 
   /**
@@ -836,13 +869,11 @@ describe('UniswapV2Pair', () => {
     await token2.transfer(pair.address, token2Amount)
     expect(await token2.balanceOf(pair.address)).to.eq(token2Amount)
 
-    const recoveryAddress = other.address
-    await factory.setDefaultRecoverer(recoveryAddress)
     await pair.recoverToken(token2.address)
 
     // All token2 should be drained from the pair
-    // and be transferred to the recoveryAddress
+    // and be transferred to the recoverer
     expect(await token2.balanceOf(pair.address)).to.eq(0)
-    expect(await token2.balanceOf(recoveryAddress)).to.eq(token2Amount)
+    expect(await token2.balanceOf(recoverer)).to.eq(token2Amount)
   })
 })

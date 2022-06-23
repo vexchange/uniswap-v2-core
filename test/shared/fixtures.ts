@@ -5,16 +5,23 @@ import { SimpleContractJSON } from "ethereum-waffle/dist/esm/ContractJSON"
 
 import { MAX_UINT_128 } from './utilities'
 import TestERC20 from '../../out/TestERC20.sol/TestERC20.json'
-import UniswapV2Factory from '../../out/UniswapV2Factory.sol/UniswapV2Factory.json'
+import GenericFactory from '../../out/GenericFactory.sol/GenericFactory.json'
 import UniswapV2Pair from '../../out/UniswapV2Pair.sol/UniswapV2Pair.json'
-import {BigNumber, bigNumberify} from "ethers/utils";
-import { AddressZero } from "ethers/constants";
+import {
+  BigNumber,
+  bigNumberify,
+  keccak256,
+  toUtf8Bytes,
+  hexZeroPad,
+  hexlify,
+} from "ethers/utils";
 
 interface FactoryFixture {
   factory: Contract
   defaultSwapFee: BigNumber
   defaultPlatformFee: BigNumber
   platformFeeTo: string
+  recoverer: string
 }
 
 const overrides = {
@@ -25,14 +32,20 @@ export async function factoryFixture(_: Web3Provider, [wallet]: Wallet[]): Promi
   const defaultSwapFee: BigNumber = bigNumberify(30);
   const defaultPlatformFee: BigNumber = bigNumberify(0);
   const platformFeeTo: string = "0x3000000000000000000000000000000000000000"
-
-  const UniswapV2FactoryRebuilt: SimpleContractJSON = {
-    abi: UniswapV2Factory.abi,
-    bytecode: UniswapV2Factory.bytecode.object
+  const recoverer: string = "0x5000000000000000000000000000000000000000"
+  const GenericFactoryRebuilt: SimpleContractJSON = {
+    abi: GenericFactory.abi,
+    bytecode: GenericFactory.bytecode.object
   }
 
-  const factory = await deployContract(wallet, UniswapV2FactoryRebuilt, [defaultSwapFee, defaultPlatformFee, platformFeeTo, AddressZero], overrides)
-  return { factory, defaultSwapFee, defaultPlatformFee, platformFeeTo }
+  const factory = await deployContract(wallet, GenericFactoryRebuilt, [], overrides)
+  await factory.addCurve(UniswapV2Pair.bytecode.object);
+
+  await factory.set(keccak256(toUtf8Bytes("UniswapV2Pair::swapFee")),  hexZeroPad(hexlify(30), 32));
+  await factory.set(keccak256(toUtf8Bytes("UniswapV2Pair::platformFee")), hexZeroPad(hexlify(2500), 32));
+  await factory.set(keccak256(toUtf8Bytes("UniswapV2Pair::defaultRecoverer")), hexZeroPad(recoverer, 32));
+
+  return { factory, defaultSwapFee, defaultPlatformFee, platformFeeTo, recoverer }
 }
 
 interface PairFixture extends FactoryFixture {
@@ -43,7 +56,7 @@ interface PairFixture extends FactoryFixture {
 }
 
 export async function pairFixture(provider: Web3Provider, [wallet]: Wallet[]): Promise<PairFixture> {
-  const { factory, defaultSwapFee, defaultPlatformFee, platformFeeTo } = await factoryFixture(provider, [wallet])
+  const { factory, defaultSwapFee, defaultPlatformFee, platformFeeTo, recoverer } = await factoryFixture(provider, [wallet])
 
   const ERC20Rebuilt: SimpleContractJSON = {
     abi: TestERC20.abi,
@@ -58,8 +71,8 @@ export async function pairFixture(provider: Web3Provider, [wallet]: Wallet[]): P
   const tokenB = await deployContract(wallet, ERC20Rebuilt, [tokenSupply], overrides)
   const tokenC = await deployContract(wallet, ERC20Rebuilt, [tokenSupply], overrides)
 
-  await factory.createPair(tokenA.address, tokenB.address, overrides)
-  const pairAddress = await factory.getPair(tokenA.address, tokenB.address)
+  await factory.createPair(tokenA.address, tokenB.address, 0, overrides)
+  const pairAddress = await factory.getPair(tokenA.address, tokenB.address, 0)
   const pair = new Contract(pairAddress, JSON.stringify(UniswapV2Pair.abi), provider).connect(wallet)
 
   const token0Address = (await pair.token0()).address
@@ -67,5 +80,5 @@ export async function pairFixture(provider: Web3Provider, [wallet]: Wallet[]): P
   const token1 = tokenA.address === token0Address ? tokenB : tokenA
   const token2 = tokenC
 
-  return { factory, defaultSwapFee, defaultPlatformFee, platformFeeTo, token0, token1, token2, pair }
+  return { factory, defaultSwapFee, defaultPlatformFee, platformFeeTo, recoverer, token0, token1, token2, pair }
 }
