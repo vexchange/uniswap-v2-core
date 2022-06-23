@@ -240,10 +240,18 @@ describe('UniswapV2Pair', () => {
    */
   it('platformFeeTo:off', async () => {
     // Ensure the the swap fee is set to 0.3%
-    await factory.rawCall(pair.address, pair.interface.functions.setCustomSwapFee.sighash + defaultAbiCoder.encode(["uint256"], [30]).substring(2), 0, overrides)
+    await factory.rawCall(
+        pair.address,
+        pair.interface.functions.setCustomSwapFee.sighash + defaultAbiCoder.encode(["uint256"], [30]).substring(2),
+        0
+    )
 
     // Ensure the platform fee is zero (equiv to original 'feeTo' off)
-    await factory.rawCall(pair.address, pair.interface.functions.setCustomPlatformFee.sighash + defaultAbiCoder.encode(["uint256"], [0]).substring(2), 0, overrides)
+    await factory.rawCall(
+        pair.address,
+        pair.interface.functions.setCustomPlatformFee.sighash + defaultAbiCoder.encode(["uint256"], [0]).substring(2),
+        0
+    )
 
     const token0Amount = expandTo18Decimals(1000)
     const token1Amount = expandTo18Decimals(1000)
@@ -275,9 +283,20 @@ describe('UniswapV2Pair', () => {
     const testSwapFee: number = 30
     const testPlatformFee: number = 1667
 
-    await factory.set(keccak256(toUtf8Bytes("UniswapV2Pair::platformFeeTo")),  hexZeroPad(other.address, 32))
-    await factory.rawCall(pair.address, pair.interface.functions.setCustomSwapFee.sighash + defaultAbiCoder.encode(["uint256"], [testSwapFee]).substring(2), 0)
-    await factory.rawCall(pair.address, pair.interface.functions.setCustomPlatformFee.sighash + defaultAbiCoder.encode(["uint256"], [testPlatformFee]).substring(2), 0)
+    await factory.set(
+        keccak256(toUtf8Bytes("UniswapV2Pair::platformFeeTo")),
+        hexZeroPad(other.address, 32)
+    )
+    await factory.rawCall(
+        pair.address,
+        pair.interface.functions.setCustomSwapFee.sighash + defaultAbiCoder.encode(["uint256"], [testSwapFee]).substring(2),
+        0
+    )
+    await factory.rawCall(
+        pair.address,
+        pair.interface.functions.setCustomPlatformFee.sighash + defaultAbiCoder.encode(["uint256"], [testPlatformFee]).substring(2),
+        0
+    )
 
     // Prepare basic liquidity of 10^18 on each token
     const token0Amount = expandTo18Decimals(1000)
@@ -689,9 +708,20 @@ describe('UniswapV2Pair', () => {
       const [swapFee, platformFee] = swapAndPlatformTestCase
 
       // Setup the platform and swap fee
-      await factory.rawCall(pair.address, pair.interface.functions.setCustomSwapFee.sighash + defaultAbiCoder.encode(["uint256"], [swapFee]).substring(2), 0, overrides)
-      await factory.rawCall(pair.address, pair.interface.functions.setCustomPlatformFee.sighash + defaultAbiCoder.encode(["uint256"], [platformFee]).substring(2), 0)
-      await factory.set(keccak256(toUtf8Bytes("UniswapV2Pair::platformFeeTo")),  hexZeroPad(other.address, 32))
+      await factory.rawCall(
+          pair.address,
+          pair.interface.functions.setCustomSwapFee.sighash + defaultAbiCoder.encode(["uint256"], [swapFee]).substring(2),
+          0
+      )
+      await factory.rawCall(
+          pair.address,
+          pair.interface.functions.setCustomPlatformFee.sighash + defaultAbiCoder.encode(["uint256"], [platformFee]).substring(2),
+          0
+      )
+      await factory.set(
+          keccak256(toUtf8Bytes("UniswapV2Pair::platformFeeTo")),
+          hexZeroPad(other.address, 32)
+      )
 
       const swapAmount : BigNumber = bigNumberify(expandTo18Decimals(1));
 
@@ -751,8 +781,15 @@ describe('UniswapV2Pair', () => {
     const platformFee : BigNumber = bigNumberify(2500)
 
     // Ensure the platform fee is set
-    await factory.rawCall(pair.address, pair.interface.functions.setCustomPlatformFee.sighash + defaultAbiCoder.encode(["uint256"], [platformFee]).substring(2), 0)
-    await factory.set(keccak256(toUtf8Bytes("UniswapV2Pair::platformFeeTo")),  hexZeroPad(other.address, 32))
+    await factory.rawCall(
+        pair.address,
+        pair.interface.functions.setCustomPlatformFee.sighash + defaultAbiCoder.encode(["uint256"], [platformFee]).substring(2),
+        0
+    )
+    await factory.set(
+        keccak256(toUtf8Bytes("UniswapV2Pair::platformFeeTo")),
+        hexZeroPad(other.address, 32)
+    )
 
     // Setup minimum liquidity
     const initial0Amount = MINIMUM_LIQUIDITY.add(1)
@@ -798,7 +835,10 @@ describe('UniswapV2Pair', () => {
    *  recoverToken - failure when recoverer is AddressZero or not set
    */
   it('recoverToken:AddressZero', async () => {
-    await factory.set(keccak256(toUtf8Bytes("UniswapV2Pair::defaultRecoverer")),  hexZeroPad(AddressZero, 32))
+    await factory.set(
+        keccak256(toUtf8Bytes("UniswapV2Pair::defaultRecoverer")),
+        hexZeroPad(AddressZero, 32)
+    )
     await expect(pair.recoverToken(token2.address)).to.be.revertedWith('UniswapV2: RECOVERER_ZERO_ADDRESS')
 
     // Transfer some token2 to pair address
