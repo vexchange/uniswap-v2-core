@@ -22,7 +22,7 @@ const overrides = {
   gasLimit: 9999999
 }
 
-describe('UniswapV2Pair', () => {
+describe('ConstantProductPair', () => {
   const provider = new MockProvider({
     hardfork: 'istanbul',
     mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
@@ -284,7 +284,7 @@ describe('UniswapV2Pair', () => {
     const testPlatformFee: number = 1667
 
     await factory.set(
-        keccak256(toUtf8Bytes("UniswapV2Pair::platformFeeTo")),
+        keccak256(toUtf8Bytes("ConstantProductPair::platformFeeTo")),
         hexZeroPad(other.address, 32)
     )
     await factory.rawCall(
@@ -719,7 +719,7 @@ describe('UniswapV2Pair', () => {
           0
       )
       await factory.set(
-          keccak256(toUtf8Bytes("UniswapV2Pair::platformFeeTo")),
+          keccak256(toUtf8Bytes("ConstantProductPair::platformFeeTo")),
           hexZeroPad(other.address, 32)
       )
 
@@ -787,7 +787,7 @@ describe('UniswapV2Pair', () => {
         0
     )
     await factory.set(
-        keccak256(toUtf8Bytes("UniswapV2Pair::platformFeeTo")),
+        keccak256(toUtf8Bytes("ConstantProductPair::platformFeeTo")),
         hexZeroPad(other.address, 32)
     )
 
@@ -836,7 +836,7 @@ describe('UniswapV2Pair', () => {
    */
   it('recoverToken:AddressZero', async () => {
     await factory.set(
-        keccak256(toUtf8Bytes("UniswapV2Pair::defaultRecoverer")),
+        keccak256(toUtf8Bytes("ConstantProductPair::defaultRecoverer")),
         hexZeroPad(AddressZero, 32)
     )
     await expect(pair.recoverToken(token2.address)).to.be.revertedWith('CP: RECOVERER_ZERO_ADDRESS')

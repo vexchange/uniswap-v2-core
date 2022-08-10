@@ -6,7 +6,7 @@ import { SimpleContractJSON } from "ethereum-waffle/dist/esm/ContractJSON"
 import { MAX_UINT_128 } from './utilities'
 import TestERC20 from '../../out/TestERC20.sol/TestERC20.json'
 import GenericFactory from '../../out/GenericFactory.sol/GenericFactory.json'
-import UniswapV2Pair from '../../out/UniswapV2Pair.sol/UniswapV2Pair.json'
+import ConstantProductPair from '../../out/ConstantProductPair.sol/ConstantProductPair.json'
 import {
   BigNumber,
   bigNumberify,
@@ -39,11 +39,11 @@ export async function factoryFixture(_: Web3Provider, [wallet]: Wallet[]): Promi
   }
 
   const factory = await deployContract(wallet, GenericFactoryRebuilt, [], overrides)
-  await factory.addCurve(UniswapV2Pair.bytecode.object);
+  await factory.addCurve(ConstantProductPair.bytecode.object);
 
-  await factory.set(keccak256(toUtf8Bytes("UniswapV2Pair::swapFee")),  hexZeroPad(hexlify(30), 32));
-  await factory.set(keccak256(toUtf8Bytes("UniswapV2Pair::platformFee")), hexZeroPad(hexlify(2500), 32));
-  await factory.set(keccak256(toUtf8Bytes("UniswapV2Pair::defaultRecoverer")), hexZeroPad(recoverer, 32));
+  await factory.set(keccak256(toUtf8Bytes("ConstantProductPair::swapFee")),  hexZeroPad(hexlify(30), 32));
+  await factory.set(keccak256(toUtf8Bytes("ConstantProductPair::platformFee")), hexZeroPad(hexlify(2500), 32));
+  await factory.set(keccak256(toUtf8Bytes("ConstantProductPair::defaultRecoverer")), hexZeroPad(recoverer, 32));
 
   return { factory, defaultSwapFee, defaultPlatformFee, platformFeeTo, recoverer }
 }
@@ -73,7 +73,7 @@ export async function pairFixture(provider: Web3Provider, [wallet]: Wallet[]): P
 
   await factory.createPair(tokenA.address, tokenB.address, 0, overrides)
   const pairAddress = await factory.getPair(tokenA.address, tokenB.address, 0)
-  const pair = new Contract(pairAddress, JSON.stringify(UniswapV2Pair.abi), provider).connect(wallet)
+  const pair = new Contract(pairAddress, JSON.stringify(ConstantProductPair.abi), provider).connect(wallet)
 
   const token0Address = (await pair.token0()).address
   const token0 = tokenA.address === token0Address ? tokenA : tokenB
