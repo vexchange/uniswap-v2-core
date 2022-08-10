@@ -1,7 +1,7 @@
 import chai, { expect } from 'chai'
 import { Contract } from 'ethers'
 import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
-import {BigNumber, bigNumberify, defaultAbiCoder, hexlify, hexZeroPad, keccak256, toUtf8Bytes} from 'ethers/utils'
+import {BigNumber, bigNumberify, defaultAbiCoder, hexZeroPad, keccak256, toUtf8Bytes} from 'ethers/utils'
 import { AddressZero } from 'ethers/constants'
 import {
   expandTo18Decimals,
@@ -95,7 +95,7 @@ describe('ConstantProductPair', () => {
       await addLiquidity(token0Amount, token1Amount)
       await token0.transfer(pair.address, swapAmount)
       await expect(pair.swap(0, expectedOutputAmount.add(1), wallet.address, '0x', overrides)).to.be.revertedWith(
-        'UniswapV2: K'
+        'CP: K'
       )
       await pair.swap(0, expectedOutputAmount, wallet.address, '0x', overrides)
     })
@@ -113,7 +113,7 @@ describe('ConstantProductPair', () => {
       await addLiquidity(token0Amount, token1Amount)
       await token0.transfer(pair.address, inputAmount)
       await expect(pair.swap(outputAmount.add(1), 0, wallet.address, '0x', overrides)).to.be.revertedWith(
-        'UniswapV2: K'
+        'CP: K'
       )
       await pair.swap(outputAmount, 0, wallet.address, '0x', overrides)
     })
@@ -811,21 +811,21 @@ describe('ConstantProductPair', () => {
     // Confirm we cannot add even just another little wafer ... expect an overflow revert.
     await token0.transfer(pair.address, bigNumberify(1))
     await token1.transfer(pair.address, bigNumberify(1))
-    await expect( pair.mint(wallet.address, overrides), 'mint with too much balance' ).to.be.revertedWith('UniswapV2: OVERFLOW')
+    await expect( pair.mint(wallet.address, overrides), 'mint with too much balance' ).to.be.revertedWith('CP: OVERFLOW')
 
     // Reconfirm established liquidity
     expect(await pair.totalSupply(), "Total supply post failed mint").to.eq(expectedLiquidity)
 
     // Also try and swap the wafer
-    await expect( pair.swap(bigNumberify(1), 0, wallet.address, '0x', overrides), 'swap with too much balance').to.be.revertedWith('UniswapV2: OVERFLOW')
+    await expect( pair.swap(bigNumberify(1), 0, wallet.address, '0x', overrides), 'swap with too much balance').to.be.revertedWith('CP: OVERFLOW')
   })
 
   /**
    *  recoverToken - error handling for invalid tokens
    */
   it('recoverToken:invalidToken', async () => {
-    await expect(pair.recoverToken(token0.address)).to.be.revertedWith('UniswapV2: INVALID_TOKEN_TO_RECOVER')
-    await expect(pair.recoverToken(token1.address)).to.be.revertedWith('UniswapV2: INVALID_TOKEN_TO_RECOVER')
+    await expect(pair.recoverToken(token0.address)).to.be.revertedWith('CP: INVALID_TOKEN_TO_RECOVER')
+    await expect(pair.recoverToken(token1.address)).to.be.revertedWith('CP: INVALID_TOKEN_TO_RECOVER')
 
     const invalidTokenAddress = "0x3704E657053C02411aA2Fd0599e75C3d817F81BC"
     await expect(pair.recoverToken(invalidTokenAddress)).to.be.reverted
@@ -839,7 +839,7 @@ describe('ConstantProductPair', () => {
         keccak256(toUtf8Bytes("ConstantProductPair::defaultRecoverer")),
         hexZeroPad(AddressZero, 32)
     )
-    await expect(pair.recoverToken(token2.address)).to.be.revertedWith('UniswapV2: RECOVERER_ZERO_ADDRESS')
+    await expect(pair.recoverToken(token2.address)).to.be.revertedWith('CP: RECOVERER_ZERO_ADDRESS')
 
     // Transfer some token2 to pair address
     const token2Amount = expandTo18Decimals(3)
@@ -847,7 +847,7 @@ describe('ConstantProductPair', () => {
     expect(await token2.balanceOf(pair.address)).to.eq(token2Amount)
 
     // recoverToken should still fail
-    await expect(pair.recoverToken(token2.address)).to.be.revertedWith('UniswapV2: RECOVERER_ZERO_ADDRESS')
+    await expect(pair.recoverToken(token2.address)).to.be.revertedWith('CP: RECOVERER_ZERO_ADDRESS')
   })
 
   /**
