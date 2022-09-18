@@ -94,14 +94,6 @@ describe('ConstantProductPair', () => {
       const [swapAmount, token0Amount, token1Amount, expectedOutputAmount] = swapTestCase
       await addLiquidity(token0Amount, token1Amount)
       await token0.transfer(pair.address, swapAmount.add(1))
-      // todo: come back to this
-      // await expect(pair.swap(0, expectedOutputAmount.add(1), wallet.address, '0x', overrides)).to.be.revertedWith(
-      //   'CP: K'
-      // )
-      // const balanceBefore2 = await token1.balanceOf(wallet.address)
-      // await pair.swap(expectedOutputAmount.mul(-1), false, wallet.address, '0x', overrides)
-      // const balanceAfter2 = await token1.balanceOf(wallet.address)
-      // expect(balanceAfter2.sub(balanceBefore2)).to.eq(expectedOutputAmount)
 
       const balanceBefore = await token1.balanceOf(wallet.address)
       await pair.swap(swapAmount, true, wallet.address, '0x', overrides)
