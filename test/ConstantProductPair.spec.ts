@@ -93,29 +93,12 @@ describe('ConstantProductPair', () => {
     it(`getInputPrice:${i}`, async () => {
       const [swapAmount, token0Amount, token1Amount, expectedOutputAmount] = swapTestCase
       await addLiquidity(token0Amount, token1Amount)
-      await token0.transfer(pair.address, swapAmount)
-      await expect(pair.swap(0, expectedOutputAmount.add(1), wallet.address, '0x', overrides)).to.be.revertedWith(
-        'CP: K'
-      )
-      await pair.swap(0, expectedOutputAmount, wallet.address, '0x', overrides)
-    })
-  })
+      await token0.transfer(pair.address, swapAmount.add(1))
 
-  const optimisticTestCases: BigNumber[][] = [
-    ['997000000000000000', 5, 10, 1], // given amountIn, amountOut = floor(amountIn * .997)
-    ['997000000000000000', 10, 5, 1],
-    ['997000000000000000', 5, 5, 1],
-    [1, 5, 5, '1003009027081243732'] // given amountOut, amountIn = ceiling(amountOut / .997)
-  ].map(a => a.map(n => (typeof n === 'string' ? bigNumberify(n) : expandTo18Decimals(n))))
-  optimisticTestCases.forEach((optimisticTestCase, i) => {
-    it(`optimistic:${i}`, async () => {
-      const [outputAmount, token0Amount, token1Amount, inputAmount] = optimisticTestCase
-      await addLiquidity(token0Amount, token1Amount)
-      await token0.transfer(pair.address, inputAmount)
-      await expect(pair.swap(outputAmount.add(1), 0, wallet.address, '0x', overrides)).to.be.revertedWith(
-        'CP: K'
-      )
-      await pair.swap(outputAmount, 0, wallet.address, '0x', overrides)
+      const balanceBefore = await token1.balanceOf(wallet.address)
+      await pair.swap(swapAmount, true, wallet.address, '0x', overrides)
+      const balanceAfter = await token1.balanceOf(wallet.address)      
+      expect(balanceAfter.sub(balanceBefore)).to.eq(expectedOutputAmount)
     })
   })
 
@@ -127,13 +110,13 @@ describe('ConstantProductPair', () => {
     const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = bigNumberify('1662497915624478906')
     await token0.transfer(pair.address, swapAmount)
-    await expect(pair.swap(0, expectedOutputAmount, wallet.address, '0x', overrides))
+    await expect(pair.swap(swapAmount, true, wallet.address, '0x', overrides))
       .to.emit(token1, 'Transfer')
       .withArgs(pair.address, wallet.address, expectedOutputAmount)
       .to.emit(pair, 'Sync')
       .withArgs(token0Amount.add(swapAmount), token1Amount.sub(expectedOutputAmount))
       .to.emit(pair, 'Swap')
-      .withArgs(wallet.address, swapAmount, 0, 0, expectedOutputAmount, wallet.address)
+      .withArgs(wallet.address, true, swapAmount, expectedOutputAmount, wallet.address)
 
     const reserves = await pair.getReserves()
     expect(reserves[0]).to.eq(token0Amount.add(swapAmount))
@@ -154,13 +137,13 @@ describe('ConstantProductPair', () => {
     const swapAmount = expandTo18Decimals(1)
     const expectedOutputAmount = bigNumberify('453305446940074565')
     await token1.transfer(pair.address, swapAmount)
-    await expect(pair.swap(expectedOutputAmount, 0, wallet.address, '0x', overrides))
+    await expect(pair.swap(swapAmount.mul(-1), true, wallet.address, '0x', overrides))
       .to.emit(token0, 'Transfer')
       .withArgs(pair.address, wallet.address, expectedOutputAmount)
       .to.emit(pair, 'Sync')
       .withArgs(token0Amount.sub(expectedOutputAmount), token1Amount.add(swapAmount))
       .to.emit(pair, 'Swap')
-      .withArgs(wallet.address, 0, swapAmount, expectedOutputAmount, 0, wallet.address)
+      .withArgs(wallet.address, false, swapAmount, expectedOutputAmount, wallet.address)
 
     const reserves = await pair.getReserves()
     expect(reserves[0]).to.eq(token0Amount.sub(expectedOutputAmount))
@@ -190,7 +173,7 @@ describe('ConstantProductPair', () => {
       .to.emit(pair, 'Sync')
       .withArgs(1000, 1000)
       .to.emit(pair, 'Burn')
-      .withArgs(wallet.address, token0Amount.sub(1000), token1Amount.sub(1000), wallet.address)
+      .withArgs(wallet.address, token0Amount.sub(1000), token1Amount.sub(1000))
 
     expect(await pair.balanceOf(wallet.address)).to.eq(0)
     expect(await pair.totalSupply()).to.eq(MINIMUM_LIQUIDITY)
@@ -234,7 +217,7 @@ describe('ConstantProductPair', () => {
     let expectedOutputAmount: BigNumber = calcSwapWithdraw(lSwapFee, swapAmount, token0Amount, token1Amount)
 
     await token1.transfer(pair.address, swapAmount)
-    const tx = await pair.swap(expectedOutputAmount, 0, wallet.address, '0x', overrides)
+    const tx = await pair.swap(swapAmount.mul(-1), true, wallet.address, '0x', overrides)
     const receipt = await tx.wait()
 
     // Drain the liquidity to verify no fee has been extracted on exit
@@ -283,7 +266,7 @@ describe('ConstantProductPair', () => {
     expect(await token1.balanceOf(pair.address), "New token1 balance allocated to pair").to.eq(token1Amount.add(swapAmount))
 
     // Perform the swap from token 1 to token 0
-    const tx = await pair.swap(expectedOutputAmount, 0, wallet.address, '0x', overrides)
+    const tx = await pair.swap(swapAmount.mul(-1), true, wallet.address, '0x', overrides)
     const receipt = await tx.wait()
 
     const newToken0Balance = await token0.balanceOf(pair.address)
@@ -703,7 +686,7 @@ describe('ConstantProductPair', () => {
       let expectedSwapAmount: BigNumber = calcSwapWithdraw(swapFee.toNumber(), swapAmount, token0Liquidity, token1Liquidity)
 
       await token1.transfer(pair.address, swapAmount)
-      const swapTx = await pair.swap(expectedSwapAmount, 0, wallet.address, '0x', overrides)
+      const swapTx = await pair.swap(swapAmount.mul(-1), true, wallet.address, '0x', overrides)
       const swapReceipt = await swapTx.wait()
 
       // Calculate the expected platform fee
@@ -784,15 +767,15 @@ describe('ConstantProductPair', () => {
     expect(await pair.totalSupply(), "Total supply post failed mint").to.eq(expectedLiquidity)
 
     // Also try and swap the wafer
-    await expect( pair.swap(bigNumberify(1), 0, wallet.address, '0x', overrides), 'swap with too much balance').to.be.revertedWith('CP: OVERFLOW')
+    await expect(pair.swap(bigNumberify(1), true, wallet.address, '0x', overrides), 'swap with too much balance').to.be.revertedWith('CP: OVERFLOW')
   })
 
   /**
    *  recoverToken - error handling for invalid tokens
    */
   it('recoverToken:invalidToken', async () => {
-    await expect(pair.recoverToken(token0.address)).to.be.revertedWith('CP: INVALID_TOKEN_TO_RECOVER')
-    await expect(pair.recoverToken(token1.address)).to.be.revertedWith('CP: INVALID_TOKEN_TO_RECOVER')
+    await expect(pair.recoverToken(token0.address)).to.be.revertedWith('P: INVALID_TOKEN_TO_RECOVER')
+    await expect(pair.recoverToken(token1.address)).to.be.revertedWith('P: INVALID_TOKEN_TO_RECOVER')
 
     const invalidTokenAddress = "0x3704E657053C02411aA2Fd0599e75C3d817F81BC"
     await expect(pair.recoverToken(invalidTokenAddress)).to.be.reverted
@@ -806,7 +789,7 @@ describe('ConstantProductPair', () => {
         keccak256(toUtf8Bytes("ConstantProductPair::defaultRecoverer")),
         hexZeroPad(AddressZero, 32)
     )
-    await expect(pair.recoverToken(token2.address)).to.be.revertedWith('CP: RECOVERER_ZERO_ADDRESS')
+    await expect(pair.recoverToken(token2.address)).to.be.revertedWith('P: RECOVERER_ZERO_ADDRESS')
 
     // Transfer some token2 to pair address
     const token2Amount = expandTo18Decimals(3)
@@ -814,7 +797,7 @@ describe('ConstantProductPair', () => {
     expect(await token2.balanceOf(pair.address)).to.eq(token2Amount)
 
     // recoverToken should still fail
-    await expect(pair.recoverToken(token2.address)).to.be.revertedWith('CP: RECOVERER_ZERO_ADDRESS')
+    await expect(pair.recoverToken(token2.address)).to.be.revertedWith('P: RECOVERER_ZERO_ADDRESS')
   })
 
   /**
