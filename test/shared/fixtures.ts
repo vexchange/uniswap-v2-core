@@ -29,7 +29,7 @@ const overrides = {
 }
 
 export async function factoryFixture(_: Web3Provider, [wallet]: Wallet[]): Promise<FactoryFixture> {
-  const defaultSwapFee: BigNumber = bigNumberify(30);
+  const defaultSwapFee: BigNumber = bigNumberify(3_000);
   const defaultPlatformFee: BigNumber = bigNumberify(0);
   const platformFeeTo: string = "0x3000000000000000000000000000000000000000"
   const recoverer: string = "0x5000000000000000000000000000000000000000"
@@ -41,8 +41,8 @@ export async function factoryFixture(_: Web3Provider, [wallet]: Wallet[]): Promi
   const factory = await deployContract(wallet, GenericFactoryRebuilt, [], overrides)
   await factory.addCurve(ConstantProductPair.bytecode.object);
 
-  await factory.set(keccak256(toUtf8Bytes("ConstantProductPair::swapFee")),  hexZeroPad(hexlify(30), 32));
-  await factory.set(keccak256(toUtf8Bytes("ConstantProductPair::platformFee")), hexZeroPad(hexlify(2500), 32));
+  await factory.set(keccak256(toUtf8Bytes("ConstantProductPair::swapFee")),  hexZeroPad(hexlify(3_000), 32));
+  await factory.set(keccak256(toUtf8Bytes("ConstantProductPair::platformFee")), hexZeroPad(hexlify(250_000), 32));
   await factory.set(keccak256(toUtf8Bytes("ConstantProductPair::defaultRecoverer")), hexZeroPad(recoverer, 32));
 
   return { factory, defaultSwapFee, defaultPlatformFee, platformFeeTo, recoverer }
