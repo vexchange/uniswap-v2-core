@@ -97,7 +97,7 @@ describe('ConstantProductPair', () => {
 
       const balanceBefore = await token1.balanceOf(wallet.address)
       await pair.swap(swapAmount, true, wallet.address, '0x', overrides)
-      const balanceAfter = await token1.balanceOf(wallet.address)      
+      const balanceAfter = await token1.balanceOf(wallet.address)
       expect(balanceAfter.sub(balanceBefore)).to.eq(expectedOutputAmount)
     })
   })
@@ -189,10 +189,10 @@ describe('ConstantProductPair', () => {
    * Platform Fee off baseline case.
    */
   it('platformFeeTo:off', async () => {
-    // Ensure the the swap fee is set to 0.3%
+    // Ensure the swap fee is set to 0.3%
     await factory.rawCall(
         pair.address,
-        pair.interface.functions.setCustomSwapFee.sighash + defaultAbiCoder.encode(["uint256"], [30]).substring(2),
+        pair.interface.functions.setCustomSwapFee.sighash + defaultAbiCoder.encode(["uint256"], [3_000]).substring(2),
         0
     )
 
@@ -230,8 +230,8 @@ describe('ConstantProductPair', () => {
    * Platform Fee on basic base.
    */
   it('platformFeeTo:on', async () => {
-    const testSwapFee: number = 30
-    const testPlatformFee: number = 1667
+    const testSwapFee: number = 3_000
+    const testPlatformFee: number = 166_667
 
     await factory.set(
         keccak256(toUtf8Bytes("ConstantProductPair::platformFeeTo")),
@@ -277,9 +277,9 @@ describe('ConstantProductPair', () => {
     const burnTx = await pair.burn(wallet.address, overrides)
     const burnReceipt = await burnTx.wait()
 
-    // Expected fee @ 1/6 or 0.1667% is calculated at 249800449363715 which is a ~0.02% error off the original uniswap.
+    // Expected fee @ 1/6 or 0.1667% is calculated at 249750998752511 which is a ~0.0002% error off the original uniswap.
     // (Original uniswap v2 equivalent ==> 249750499251388)
-    const expectedPlatformFee: BigNumber = bigNumberify(249800449363715)
+    const expectedPlatformFee: BigNumber = bigNumberify(249750998752511)
 
     const expectedTotalSupply: BigNumber = MINIMUM_LIQUIDITY.add(expectedPlatformFee)
 
@@ -289,24 +289,24 @@ describe('ConstantProductPair', () => {
     // Check that the fee receiver (account set to platformFeeTo) received the fees
     expect(await pair.balanceOf(other.address), "Fee receiver balance").to.eq(expectedPlatformFee)
 
-    // The (inverted) target max variance of 0.02% of Vexchange platform fee to VexchangeV2.
+    // The (inverted) target max variance of 0.0002% of Vexchange platform fee to VexchangeV2.
     // This variance is due to the max-precision of the platform fee and fee-pricing algorithm; inverted due to integer division math.
-    const targetInverseVariance: number = 5000;
+    const targetInverseVariance: number = 500000;
 
     // Verify a +/- 5% range around the variance
     const minInverseVariance: number = targetInverseVariance * 0.95;
     const maxInverseVariance: number = targetInverseVariance * 1.05;
 
-    // Compare 1/6 vexchangeV2 fee, using 0.1667 Vexchange Platform fee: run check to confirm ~ 0.02% variance.
-    const token0ExpBalVexchangeV2: BigNumber = bigNumberify( '249501683697445' )
-    const token0ExpBalVexchange: BigNumber = bigNumberify( '249551584034184' )
-    const token0Variance: number = token0ExpBalVexchangeV2.div(token0ExpBalVexchange.sub(token0ExpBalVexchangeV2)).toNumber();
+    // Compare 1/6 UniV2 fee, using 0.166667 Vexchange Platform fee: run check to confirm ~ 0.0002% variance.
+    const token0ExpBalUniV2: BigNumber = bigNumberify( '249501683697445' )
+    const token0ExpBalVexchange: BigNumber = bigNumberify( '249502182700812' )
+    const token0Variance: number = token0ExpBalUniV2.div(token0ExpBalVexchange.sub(token0ExpBalUniV2)).toNumber();
     expect(token0Variance, "token 0 variance from uniswap v2 fee" ).to.be.within(minInverseVariance, maxInverseVariance)
 
-    // Compare 1/6 vexchangeV2 fee, using 0.1667 Vexchange Platform fee: run check to confirm ~ 0.02% variance.
-    const token1ExpBalVexchangeV2: BigNumber = bigNumberify( '250000187312969' )
-    const token1ExpBalVexchange: BigNumber = bigNumberify( '250050187350431' )
-    const token1Variance: number = token1ExpBalVexchangeV2.div(token1ExpBalVexchange.sub(token1ExpBalVexchangeV2)).toNumber();
+    // Compare 1/6 UniV2 fee, using 0.166667 Vexchange Platform fee: run check to confirm ~ 0.0002% variance.
+    const token1ExpBalUniV2: BigNumber = bigNumberify( '250000187312969' )
+    const token1ExpBalVexchange: BigNumber = bigNumberify( '250000687313344' )
+    const token1Variance: number = token1ExpBalUniV2.div(token1ExpBalVexchange.sub(token1ExpBalUniV2)).toNumber();
     expect(token1Variance, "token 1 variance from uniswap v2 fee" ).to.be.within(minInverseVariance, maxInverseVariance)
 
     // using 1000 here instead of the symbolic MINIMUM_LIQUIDITY because the amounts only happen to be equal...
@@ -357,7 +357,7 @@ describe('ConstantProductPair', () => {
     // Constants from VexchangeV2Pair _calcFee
     const ACCURACY_SQRD : BigNumber = bigNumberify('10000000000000000000000000000000000000000000000000000000000000000000000000000')
     const ACCURACY      : BigNumber = bigNumberify('100000000000000000000000000000000000000')
-    const FEE_ACCURACY  : BigNumber = bigNumberify(10000)
+    const FEE_ACCURACY  : BigNumber = bigNumberify(1_000_000)
 
     const lTotalSupply  : BigNumber = bigNumberSqrt(aToken0Balance.mul(aToken1Balance))
 
@@ -405,7 +405,7 @@ describe('ConstantProductPair', () => {
 
     // Calculate 1/fee, exit is fee is zero
     if (aPlatformFee.eq(bigNumberify(0))) return 0;
-    const inverseFee : number = 10000 / aPlatformFee.toNumber();
+    const inverseFee : number = 1_000_000 / aPlatformFee.toNumber();
 
     // Implement whitepaper equation
     const numerator : number = lTotalSupply * (K2 - K1);
@@ -434,7 +434,7 @@ describe('ConstantProductPair', () => {
     const pairInvariant: BigNumber = aWithdrawTokenBalance.mul(aDepositTokenBalance)
 
     // The amount added to the liquidity pool after fees
-    const depositAfterFees : BigNumber = aSwapAmount.mul(10000-aSwapFee).div(10000)
+    const depositAfterFees : BigNumber = aSwapAmount.mul(1_000_000-aSwapFee).div(1_000_000)
 
     // The new token1 total (add the incoming liquidity)
     const depositTokenAfterDeposit: BigNumber = aDepositTokenBalance.add(depositAfterFees)
@@ -472,45 +472,45 @@ describe('ConstantProductPair', () => {
   var lComparisonReportData : ComparisonRecord[] = [];
 
   const comparisonTestCases: BigNumber[][] = [
-    [    0,  10000,  10000,    20000,    20000 ], //< Zero plaform-fee.
-    [    5,  10000,  10000,    10000,    10000 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
-    [    5,  10000,   5000,    10000,     5000 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
-    [    5,  10000,   5000,     5000,    10000 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
-    [    5,   5000,  10000,    10000,     5000 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
-    [    5,  10000,  10000,    20000,    20000 ],
-    [   10,  10000,  10000,    20000,    20000 ],
-    [   25,  10000,  10000,    50000,    50000 ],
-    [   50,  10000,  10000,    20000,    20000 ],
-    [  100,  10000,  10000,    20000,    20000 ],
-    [  500,  10000,  10000,    20000,    20000 ],
-    [ 1000,  10000,  10000,    20000,    20000 ],
-    [ 1000, 100000, 100000,   160000,   160000 ],
-    [ 1000, 100000, 100000,   500000,   500000 ],
-    [ 1667,  10000,  10000,    20000,    20000 ],
-    [ 1667,  10000,  10000,    90000,    90000 ],
-    [ 1667,  10000,  10000,   200000,   200000 ],
-    [ 1667,  10000,  10000,  9900000,  9900000 ],
-    [ 2000,  10000,  10000,    20000,    20000 ],
-    [ 2500,  10000,  10000,    20000,    20000 ],
-    [ 2500,  10000,  10000,    15000,    10000 ],
-    [ 2500,  10000,  10000,    10000,    15000 ],
-    [ 2500,   5000,  20000,    10000,    15000 ],
-    [ 2500,  20000,   5000,    10000,    15000 ],
-    [ 2500,   5000,  10000,    10000,     5000 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
-    [ 2500,  10000,   5000,     5000,    10000 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
-    [ 2500,  10000,   5000,    20000,    10000 ],
-    [ 2500,  10000,  10000,    50000,    50000 ],
-    [ 2500,  20000,  20000,    60000,    60000 ],
-    [ 2500, 100000, 100000,   500000,   500000 ],
-    [ 3000,  10000,  10000,    12000,    12000 ],
-    [ 3000,  10000,  10000,    10500,    10500 ],
-    [ 4500,  10000,  10000,    10200,    10200 ],
-    [ 5000,  10000,  10000,    50000,    50000 ],
-    [ 5000, 100000, 100000,   500000,   500000 ],
-    [ 5000, 100000, 100000,  1000000,  1000000 ],
-    [ 5000, 100000, 100000,  2000000,  2000000 ],
-    [ 4950,   1000,   1000, 99000000, 99000000 ],
-    [ 4950,   1000,   1000, 99000000, 99000000 ],
+    [      0,  10000,  10000,    20000,    20000 ], //< Zero plaform-fee.
+    [    500,  10000,  10000,    10000,    10000 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
+    [    500,  10000,   5000,    10000,     5000 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
+    [    500,  10000,   5000,     5000,    10000 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
+    [    500,   5000,  10000,    10000,     5000 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
+    [    500,  10000,  10000,    20000,    20000 ],
+    [   1000,  10000,  10000,    20000,    20000 ],
+    [   2500,  10000,  10000,    50000,    50000 ],
+    [   5000,  10000,  10000,    20000,    20000 ],
+    [  10000,  10000,  10000,    20000,    20000 ],
+    [  50000,  10000,  10000,    20000,    20000 ],
+    [ 100000,  10000,  10000,    20000,    20000 ],
+    [ 100000, 100000, 100000,   160000,   160000 ],
+    [ 100000, 100000, 100000,   500000,   500000 ],
+    [ 166667,  10000,  10000,    20000,    20000 ],
+    [ 166667,  10000,  10000,    90000,    90000 ],
+    [ 166667,  10000,  10000,   200000,   200000 ],
+    [ 166667,  10000,  10000,  9900000,  9900000 ],
+    [ 200000,  10000,  10000,    20000,    20000 ],
+    [ 250000,  10000,  10000,    20000,    20000 ],
+    [ 250000,  10000,  10000,    15000,    10000 ],
+    [ 250000,  10000,  10000,    10000,    15000 ],
+    [ 250000,   5000,  20000,    10000,    15000 ],
+    [ 250000,  20000,   5000,    10000,    15000 ],
+    [ 250000,   5000,  10000,    10000,     5000 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
+    [ 250000,  10000,   5000,     5000,    10000 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
+    [ 250000,  10000,   5000,    20000,    10000 ],
+    [ 250000,  10000,  10000,    50000,    50000 ],
+    [ 250000,  20000,  20000,    60000,    60000 ],
+    [ 250000, 100000, 100000,   500000,   500000 ],
+    [ 300000,  10000,  10000,    12000,    12000 ],
+    [ 300000,  10000,  10000,    10500,    10500 ],
+    [ 450000,  10000,  10000,    10200,    10200 ],
+    [ 500000,  10000,  10000,    50000,    50000 ],
+    [ 500000, 100000, 100000,   500000,   500000 ],
+    [ 500000, 100000, 100000,  1000000,  1000000 ],
+    [ 500000, 100000, 100000,  2000000,  2000000 ],
+    [ 495000,   1000,   1000, 99000000, 99000000 ],
+    [ 495000,   1000,   1000, 99000000, 99000000 ],
   ].map(a => a.map(n => (bigNumberify(n))))
   comparisonTestCases.forEach((platformFeeTestCase, i) => {
     it(`compareCalcPlatformFee:${i}`, async () => {
@@ -568,38 +568,38 @@ describe('ConstantProductPair', () => {
    * https://uniswap.org/whitepaper.pdf
    */
   const calcPlatformFeeTestCases: BigNumber[][] = [
-    [    0,  10000,  10000,   20000,   20000,     0 ], //< Zero plaform-fee.
-    [    5,  10000,  10000,   10000,   10000,     0 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
-    [    5,  10000,   5000,   10000,    5000,     0 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
-    [    5,  10000,   5000,    5000,   10000,     0 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
-    [    5,   5000,  10000,   10000,    5000,     0 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
-    [    5,  10000,  10000,   20000,   20000,     2 ],
-    [   10,  10000,  10000,   20000,   20000,     5 ],
-    [   25,  10000,  10000,   50000,   50000,    20 ],
-    [   50,  10000,  10000,   20000,   20000,    25 ],
-    [  100,  10000,  10000,   20000,   20000,    50 ],
-    [  500,  10000,  10000,   20000,   20000,   256 ],
-    [ 1000,  10000,  10000,   20000,   20000,   526 ],
-    [ 1000, 100000, 100000,  160000,  160000,  3896 ],
-    [ 1000, 100000, 100000,  500000,  500000,  8695 ],
-    [ 1667,  10000,  10000,   20000,   20000,   909 ],
-    [ 2000,  10000,  10000,   20000,   20000,  1111 ],
-    [ 2500,  10000,  10000,   20000,   20000,  1428 ],
-    [ 2500,  10000,  10000,   15000,   10000,   480 ],
-    [ 2500,  10000,  10000,   10000,   15000,   480 ],
-    [ 2500,   5000,  20000,   10000,   15000,   480 ],
-    [ 2500,  20000,   5000,   10000,   15000,   480 ],
-    [ 2500,   5000,  10000,   10000,    5000,     0 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
-    [ 2500,  10000,   5000,    5000,   10000,     0 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
-    [ 2500,  10000,   5000,   20000,   10000,  1010 ],
-    [ 2500,  10000,  10000,   50000,   50000,  2500 ],
-    [ 2500,  20000,  20000,   60000,   60000,  3999 ],
-    [ 2500, 100000, 100000,  500000,  500000, 25000 ],
-    [ 3000,  10000,  10000,   12000,   12000,   526 ],
-    [ 5000,  10000,  10000,   50000,   50000,  6666 ],
-    [ 5000, 100000, 100000,  500000,  500000, 66666 ],
-    [ 5000, 100000, 100000, 1000000, 1000000, 81818 ],
-    [ 5000, 100000, 100000, 2000000, 2000000, 90476 ],
+    [      0,  10000,  10000,   20000,   20000,     0 ], //< Zero plaform-fee.
+    [    500,  10000,  10000,   10000,   10000,     0 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
+    [    500,  10000,   5000,   10000,    5000,     0 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
+    [    500,  10000,   5000,    5000,   10000,     0 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
+    [    500,   5000,  10000,   10000,    5000,     0 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
+    [    500,  10000,  10000,   20000,   20000,     2 ],
+    [   1000,  10000,  10000,   20000,   20000,     5 ],
+    [   2500,  10000,  10000,   50000,   50000,    20 ],
+    [   5000,  10000,  10000,   20000,   20000,    25 ],
+    [  10000,  10000,  10000,   20000,   20000,    50 ],
+    [  50000,  10000,  10000,   20000,   20000,   256 ],
+    [ 100000,  10000,  10000,   20000,   20000,   526 ],
+    [ 100000, 100000, 100000,  160000,  160000,  3896 ],
+    [ 100000, 100000, 100000,  500000,  500000,  8695 ],
+    [ 166700,  10000,  10000,   20000,   20000,   909 ],
+    [ 200000,  10000,  10000,   20000,   20000,  1111 ],
+    [ 250000,  10000,  10000,   20000,   20000,  1428 ],
+    [ 250000,  10000,  10000,   15000,   10000,   480 ],
+    [ 250000,  10000,  10000,   10000,   15000,   480 ],
+    [ 250000,   5000,  20000,   10000,   15000,   480 ],
+    [ 250000,  20000,   5000,   10000,   15000,   480 ],
+    [ 250000,   5000,  10000,   10000,    5000,     0 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
+    [ 250000,  10000,   5000,    5000,   10000,     0 ], //< Equivalent liquidity, so growth & zero fee: not technically possible from _mintFee.
+    [ 250000,  10000,   5000,   20000,   10000,  1010 ],
+    [ 250000,  10000,  10000,   50000,   50000,  2500 ],
+    [ 250000,  20000,  20000,   60000,   60000,  3999 ],
+    [ 250000, 100000, 100000,  500000,  500000, 25000 ],
+    [ 300000,  10000,  10000,   12000,   12000,   526 ],
+    [ 500000,  10000,  10000,   50000,   50000,  6666 ],
+    [ 500000, 100000, 100000,  500000,  500000, 66666 ],
+    [ 500000, 100000, 100000, 1000000, 1000000, 81818 ],
+    [ 500000, 100000, 100000, 2000000, 2000000, 90476 ],
   ].map(a => a.map(n => (bigNumberify(n))))
   calcPlatformFeeTestCases.forEach((platformFeeTestCase, i) => {
     it(`calcPlatformFee:${i}`, async () => {
