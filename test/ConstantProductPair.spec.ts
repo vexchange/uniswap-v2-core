@@ -234,7 +234,7 @@ describe('ConstantProductPair', () => {
     const testPlatformFee: number = 166_667
 
     await factory.set(
-        keccak256(toUtf8Bytes("ConstantProductPair::platformFeeTo")),
+        keccak256(toUtf8Bytes("Shared::platformFeeTo")),
         hexZeroPad(other.address, 32)
     )
     await factory.rawCall(
@@ -669,7 +669,7 @@ describe('ConstantProductPair', () => {
           0
       )
       await factory.set(
-          keccak256(toUtf8Bytes("ConstantProductPair::platformFeeTo")),
+          keccak256(toUtf8Bytes("Shared::platformFeeTo")),
           hexZeroPad(other.address, 32)
       )
 
@@ -737,7 +737,7 @@ describe('ConstantProductPair', () => {
         0
     )
     await factory.set(
-        keccak256(toUtf8Bytes("ConstantProductPair::platformFeeTo")),
+        keccak256(toUtf8Bytes("Shared::platformFeeTo")),
         hexZeroPad(other.address, 32)
     )
 
@@ -786,7 +786,7 @@ describe('ConstantProductPair', () => {
    */
   it('recoverToken:AddressZero', async () => {
     await factory.set(
-        keccak256(toUtf8Bytes("ConstantProductPair::defaultRecoverer")),
+        keccak256(toUtf8Bytes("Shared::defaultRecoverer")),
         hexZeroPad(AddressZero, 32)
     )
     await expect(pair.recoverToken(token2.address)).to.be.revertedWith('P: RECOVERER_ZERO_ADDRESS')
