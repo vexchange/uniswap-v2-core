@@ -20,6 +20,7 @@ interface FactoryFixture {
   factory: Contract
   defaultSwapFee: BigNumber
   defaultPlatformFee: BigNumber
+  defaultAllowedChangePerSecond: BigNumber
   platformFeeTo: string
   recoverer: string
 }
@@ -31,6 +32,7 @@ const overrides = {
 export async function factoryFixture(_: Web3Provider, [wallet]: Wallet[]): Promise<FactoryFixture> {
   const defaultSwapFee: BigNumber = bigNumberify(3_000);
   const defaultPlatformFee: BigNumber = bigNumberify(0);
+  const defaultAllowedChangePerSecond = bigNumberify(0.0005e18);
   const platformFeeTo: string = "0x3000000000000000000000000000000000000000"
   const recoverer: string = "0x5000000000000000000000000000000000000000"
   const GenericFactoryRebuilt: SimpleContractJSON = {
@@ -41,11 +43,12 @@ export async function factoryFixture(_: Web3Provider, [wallet]: Wallet[]): Promi
   const factory = await deployContract(wallet, GenericFactoryRebuilt, [], overrides)
   await factory.addCurve(ConstantProductPair.bytecode.object);
 
-  await factory.set(keccak256(toUtf8Bytes("CP::swapFee")),  hexZeroPad(hexlify(3_000), 32));
-  await factory.set(keccak256(toUtf8Bytes("Shared::platformFee")), hexZeroPad(hexlify(250_000), 32));
+  await factory.set(keccak256(toUtf8Bytes("CP::swapFee")),  hexZeroPad(hexlify(defaultSwapFee), 32));
+  await factory.set(keccak256(toUtf8Bytes("Shared::platformFee")), hexZeroPad(hexlify(defaultPlatformFee), 32));
   await factory.set(keccak256(toUtf8Bytes("Shared::defaultRecoverer")), hexZeroPad(recoverer, 32));
+  await factory.set(keccak256(toUtf8Bytes("Shared::allowedChangePerSecond")), hexZeroPad(hexlify(defaultAllowedChangePerSecond), 32));
 
-  return { factory, defaultSwapFee, defaultPlatformFee, platformFeeTo, recoverer }
+  return { factory, defaultSwapFee, defaultPlatformFee, defaultAllowedChangePerSecond, platformFeeTo, recoverer }
 }
 
 interface PairFixture extends FactoryFixture {
@@ -56,7 +59,7 @@ interface PairFixture extends FactoryFixture {
 }
 
 export async function pairFixture(provider: Web3Provider, [wallet]: Wallet[]): Promise<PairFixture> {
-  const { factory, defaultSwapFee, defaultPlatformFee, platformFeeTo, recoverer } = await factoryFixture(provider, [wallet])
+  const { factory, defaultSwapFee, defaultPlatformFee, defaultAllowedChangePerSecond, platformFeeTo, recoverer } = await factoryFixture(provider, [wallet])
 
   const ERC20Rebuilt: SimpleContractJSON = {
     abi: TestERC20.abi,
@@ -80,5 +83,5 @@ export async function pairFixture(provider: Web3Provider, [wallet]: Wallet[]): P
   const token1 = tokenA.address === token0Address ? tokenB : tokenA
   const token2 = tokenC
 
-  return { factory, defaultSwapFee, defaultPlatformFee, platformFeeTo, recoverer, token0, token1, token2, pair }
+  return { factory, defaultSwapFee, defaultPlatformFee, defaultAllowedChangePerSecond, platformFeeTo, recoverer, token0, token1, token2, pair }
 }
