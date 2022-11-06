@@ -1,7 +1,7 @@
 import chai, { expect } from 'chai'
 import { Contract } from 'ethers'
 import { solidity, MockProvider, createFixtureLoader } from 'ethereum-waffle'
-import {BigNumber, bigNumberify, defaultAbiCoder, hexZeroPad, keccak256, toUtf8Bytes} from 'ethers/utils'
+import { BigNumber, bigNumberify, defaultAbiCoder, hexZeroPad, keccak256, toUtf8Bytes } from 'ethers/utils'
 import { AddressZero } from 'ethers/constants'
 import {
   expandTo18Decimals,

@@ -78,7 +78,7 @@ export async function pairFixture(provider: Web3Provider, [wallet]: Wallet[]): P
   const pairAddress = await factory.getPair(tokenA.address, tokenB.address, 0)
   const pair = new Contract(pairAddress, JSON.stringify(ConstantProductPair.abi), provider).connect(wallet)
 
-  const token0Address = (await pair.token0()).address
+  const token0Address = await pair.token0()
   const token0 = tokenA.address === token0Address ? tokenA : tokenB
   const token1 = tokenA.address === token0Address ? tokenB : tokenA
   const token2 = tokenC
