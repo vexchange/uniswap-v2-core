@@ -40,7 +40,7 @@ export async function factoryFixture(_: Web3Provider, [wallet]: Wallet[]): Promi
     bytecode: GenericFactory.bytecode.object
   }
 
-  const factory = await deployContract(wallet, GenericFactoryRebuilt, [], overrides)
+  const factory = await deployContract(wallet, GenericFactoryRebuilt, [wallet.address], overrides)
   await factory.addCurve(ConstantProductPair.bytecode.object);
 
   await factory.set(keccak256(toUtf8Bytes("CP::swapFee")),  hexZeroPad(hexlify(defaultSwapFee), 32));
