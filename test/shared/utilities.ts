@@ -17,6 +17,7 @@ const PERMIT_TYPEHASH = keccak256(
 
 export const MAX_UINT_64: BigNumber = bigNumberify(2).pow(64).sub(1);
 export const MAX_UINT_100: BigNumber = bigNumberify(2).pow(100).sub(1);
+export const MAX_UINT_104: BigNumber = bigNumberify(2).pow(104).sub(1);
 export const MAX_UINT_112: BigNumber = bigNumberify(2).pow(112).sub(1);
 export const MAX_UINT_114: BigNumber = bigNumberify(2).pow(114).sub(1);
 export const MAX_UINT_128: BigNumber = bigNumberify(2).pow(128).sub(1);
@@ -156,5 +157,5 @@ export async function mineBlock(provider: Web3Provider, timestamp: number): Prom
 }
 
 export function encodePrice(reserve0: BigNumber, reserve1: BigNumber) {
-  return [reserve1.mul(bigNumberify(2).pow(112)).div(reserve0), reserve0.mul(bigNumberify(2).pow(112)).div(reserve1)]
+  return [reserve1.mul(bigNumberify(2).pow(104)).div(reserve0), reserve0.mul(bigNumberify(2).pow(104)).div(reserve1)]
 }

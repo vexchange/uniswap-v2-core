@@ -7,7 +7,7 @@ import {
   expandTo18Decimals,
   mineBlock,
   encodePrice,
-  MAX_UINT_112,
+  MAX_UINT_104,
   MAX_UINT_128,
   MAX_UINT_256,
   bigNumberSqrt, closeTo
@@ -366,10 +366,10 @@ describe('ConstantProductPair', () => {
     const pairSqrtInvariantNew: BigNumber = bigNumberSqrt( aNewToken0Balance.mul(aNewToken1Balance) )
 
     // Assertions made but not enforced by Pair contract
-    expect(pairSqrtInvariantOriginal, 'pairSqrtINvariantOriginal < 112bit').to.lte(MAX_UINT_112)
-    expect(pairSqrtInvariantNew, 'pairSqrtInvariantNew < 112bit').to.lte(MAX_UINT_112)
+    expect(pairSqrtInvariantOriginal, 'pairSqrtINvariantOriginal < 104bit').to.lte(MAX_UINT_104)
+    expect(pairSqrtInvariantNew, 'pairSqrtInvariantNew < 104bit').to.lte(MAX_UINT_104)
     expect(aPlatformFee, 'platformFee < FeeAccuracy').to.lte(FEE_ACCURACY)
-    expect(lTotalSupply, 'totalSupply < 112bit').to.lte(MAX_UINT_112)
+    expect(lTotalSupply, 'totalSupply < 104bit').to.lte(MAX_UINT_104)
 
     // The algorithm from VexchangeV2Pair _calcFee
     const lScaledGrowth = pairSqrtInvariantNew.mul(ACCURACY).div(pairSqrtInvariantOriginal)
@@ -676,11 +676,11 @@ describe('ConstantProductPair', () => {
       const swapAmount : BigNumber = bigNumberify(expandTo18Decimals(1));
 
       // Setup liquidity in the pair - leave room for a swap to MAX one side
-      const token0Liquidity = MAX_UINT_112.sub(swapAmount)
-      const token1Liquidity = MAX_UINT_112.sub(swapAmount)
+      const token0Liquidity = MAX_UINT_104.sub(swapAmount)
+      const token1Liquidity = MAX_UINT_104.sub(swapAmount)
       await addLiquidity(token0Liquidity, token1Liquidity)
 
-      const expectedLiquidity = MAX_UINT_112.sub(swapAmount)
+      const expectedLiquidity = MAX_UINT_104.sub(swapAmount)
       expect(await pair.totalSupply(), "Initial total supply").to.eq(expectedLiquidity)
 
       let expectedSwapAmount: BigNumber = calcSwapWithdraw(swapFee.toNumber(), swapAmount, token0Liquidity, token1Liquidity)
@@ -725,7 +725,7 @@ describe('ConstantProductPair', () => {
   /**
    * basicOverflow
    *
-   * Testing mint and swap handling of an overflow balance (> max-uint-112).
+   * Testing mint and swap handling of an overflow balance (> max-uint-104).
    */
   it('basicOverflow', async () => {
     const platformFee : BigNumber = bigNumberify(2500)
@@ -746,16 +746,16 @@ describe('ConstantProductPair', () => {
     const initial1Amount = MINIMUM_LIQUIDITY.add(1)
     await addLiquidity(initial0Amount, initial1Amount)
 
-    const expectedInitalLiquidity = MINIMUM_LIQUIDITY.add(1)
-    expect(await pair.totalSupply(), "Initial total supply").to.eq(expectedInitalLiquidity)
+    const expectedInitialLiquidity = MINIMUM_LIQUIDITY.add(1)
+    expect(await pair.totalSupply(), "Initial total supply").to.eq(expectedInitialLiquidity)
 
     // Add a lot more - taking us to the limit
-    const token0Amount = MAX_UINT_112.sub(initial0Amount)
-    const token1Amount = MAX_UINT_112.sub(initial1Amount)
+    const token0Amount = MAX_UINT_104.sub(initial0Amount)
+    const token1Amount = MAX_UINT_104.sub(initial1Amount)
     await addLiquidity(token0Amount, token1Amount)
 
     // Confirm liquidity is established
-    const expectedLiquidity = MAX_UINT_112 // geometric mean of token0Amount and token1Amount (equal, so can use one)
+    const expectedLiquidity = MAX_UINT_104 // geometric mean of token0Amount and token1Amount (equal, so can use one)
     expect(await pair.totalSupply(), "Second stage total supply").to.eq(expectedLiquidity)
 
     // Confirm we cannot add even just another little wafer ... expect an overflow revert.
