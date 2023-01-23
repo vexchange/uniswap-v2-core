@@ -46,7 +46,7 @@ export async function factoryFixture(_: Web3Provider, [wallet]: Wallet[]): Promi
   await factory.set(keccak256(toUtf8Bytes("CP::swapFee")),  hexZeroPad(hexlify(defaultSwapFee), 32));
   await factory.set(keccak256(toUtf8Bytes("Shared::platformFee")), hexZeroPad(hexlify(defaultPlatformFee), 32));
   await factory.set(keccak256(toUtf8Bytes("Shared::defaultRecoverer")), hexZeroPad(recoverer, 32));
-  await factory.set(keccak256(toUtf8Bytes("Shared::allowedChangePerSecond")), hexZeroPad(hexlify(defaultAllowedChangePerSecond), 32));
+  await factory.set(keccak256(toUtf8Bytes("Shared::maxChangeRate")), hexZeroPad(hexlify(defaultAllowedChangePerSecond), 32));
 
   return { factory, defaultSwapFee, defaultPlatformFee, defaultAllowedChangePerSecond, platformFeeTo, recoverer }
 }
