@@ -782,22 +782,21 @@ describe('ConstantProductPair', () => {
   })
 
   /**
-   *  recoverToken - failure when recoverer is AddressZero or not set
+   *  recoverToken - will still succeed when the recoverer is address(0)
    */
   it('recoverToken:AddressZero', async () => {
     await factory.set(
-        keccak256(toUtf8Bytes("Shared::defaultRecoverer")),
+        keccak256(toUtf8Bytes("Shared::recoverer")),
         hexZeroPad(AddressZero, 32)
     )
-    await expect(pair.recoverToken(token2.address)).to.be.revertedWith('P: RECOVERER_ZERO_ADDRESS')
 
     // Transfer some token2 to pair address
     const token2Amount = expandTo18Decimals(3)
     await token2.transfer(pair.address, token2Amount)
     expect(await token2.balanceOf(pair.address)).to.eq(token2Amount)
 
-    // recoverToken should still fail
-    await expect(pair.recoverToken(token2.address)).to.be.revertedWith('P: RECOVERER_ZERO_ADDRESS')
+    await pair.recoverToken(token2.address)
+    expect(await token2.balanceOf(AddressZero)).to.equal(token2Amount)
   })
 
   /**
